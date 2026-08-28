@@ -294,3 +294,36 @@ Deno.test("size mismatch is changed", async () => {
     await Deno.remove(dir, { recursive: true });
   }
 });
+
+Deno.test("in accepts v0 ferry.jsonl lines that omit size", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "decomm-ferry-v0-ok-" });
+  try {
+    await write(dir, "a.txt", "alpha\n");
+    const sha256 = await sha256File(`${dir}/a.txt`);
+    await Deno.writeTextFile(
+      `${dir}/ferry.jsonl`,
+      JSON.stringify({ path: "a.txt", sha256 }) + "\n",
+    );
+    assertEquals(await run(["in", dir]), "ok (1)\n");
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("in reports changed when v0 receipt bytes differ", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "decomm-ferry-v0-chg-" });
+  try {
+    await write(dir, "a.txt", "one\n");
+    const sha256 = await sha256File(`${dir}/a.txt`);
+    await Deno.writeTextFile(
+      `${dir}/ferry.jsonl`,
+      JSON.stringify({ path: "a.txt", sha256 }) + "\n",
+    );
+    await write(dir, "a.txt", "two\n");
+    const err = await assertRejects(() => run(["in", dir]), Error, "changed");
+    assertStringIncludes(err.message, "a.txt");
+    assertEquals(err.message.split("\n")[0], "1 changed");
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});

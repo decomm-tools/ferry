@@ -7,7 +7,7 @@ const SKIP_NOISE = new Set([".DS_Store", "Thumbs.db"]);
 export type ManifestEntry = {
   path: string;
   sha256: string;
-  size: number;
+  size?: number;
   mtime?: string;
 };
 
@@ -160,15 +160,16 @@ export const readManifest = async (dir: string): Promise<ManifestEntry[]> => {
       throw new Error(`bad ${MANIFEST_NAME} line ${i + 1}`);
     }
     const rec = parsed as Record<string, unknown>;
-    if (
-      typeof rec.path !== "string" ||
-      typeof rec.sha256 !== "string" ||
-      typeof rec.size !== "number" ||
-      !Number.isFinite(rec.size)
-    ) {
+    if (typeof rec.path !== "string" || typeof rec.sha256 !== "string") {
       throw new Error(`bad ${MANIFEST_NAME} line ${i + 1}`);
     }
-    const entry: ManifestEntry = { path: rec.path, sha256: rec.sha256, size: rec.size };
+    const entry: ManifestEntry = { path: rec.path, sha256: rec.sha256 };
+    if (rec.size !== undefined) {
+      if (typeof rec.size !== "number" || !Number.isFinite(rec.size)) {
+        throw new Error(`bad ${MANIFEST_NAME} line ${i + 1}`);
+      }
+      entry.size = rec.size;
+    }
     if (typeof rec.mtime === "string") entry.mtime = rec.mtime;
     entries.push(entry);
   }
@@ -198,7 +199,7 @@ export const ferryOut = async (
   }
   const entries = await walkFiles(dir, { all: options.all });
   await writeManifest(dir, entries);
-  const total = entries.reduce((sum, entry) => sum + entry.size, 0);
+  const total = entries.reduce((sum, entry) => sum + (entry.size ?? 0), 0);
   const word = entries.length === 1 ? "file" : "files";
   return `${entries.length} ${word}, ${formatBytes(total)}\n${manifestPath}\n`;
 };
@@ -224,7 +225,10 @@ export const ferryIn = async (
   for (const [path, want] of expectedMap) {
     const got = actualMap.get(path);
     if (!got) missing.push(path);
-    else if (got.size !== want.size || got.sha256 !== want.sha256) changed.push(path);
+    else if (
+      got.sha256 !== want.sha256 ||
+      (typeof want.size === "number" && Number.isFinite(want.size) && got.size !== want.size)
+    ) changed.push(path);
   }
   for (const path of actualMap.keys()) {
     if (!expectedMap.has(path)) extra.push(path);
