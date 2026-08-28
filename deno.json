@@ -1,0 +1,40 @@
+{
+  "name": "@decomm/ferry",
+  "version": "1.0.0",
+  "license": "MIT",
+  "exports": {
+    ".": "./main.ts",
+    "./init": "./init.ts"
+  },
+  "publish": {
+    "include": [
+      "main.ts",
+      "args.ts",
+      "manifest.ts",
+      "init.ts",
+      "ferry.sh",
+      "README.md",
+      "LICENSE",
+      "deno.json",
+      "jsr.json"
+    ]
+  },
+  "tasks": {
+    "ferry": "deno run --allow-read --allow-write main.ts",
+    "compile": "mkdir -p bin && deno compile --allow-read --allow-write --output bin/ferry main.ts",
+    "test": "deno test --allow-read --allow-write",
+    "check": "deno check main.ts args.ts manifest.ts init.ts",
+    "fmt": "deno fmt",
+    "lint": "deno lint"
+  },
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.19"
+  },
+  "compilerOptions": {
+    "strict": true
+  },
+  "fmt": {
+    "lineWidth": 100,
+    "indentWidth": 2
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@decomm/ferry",
+  "version": "1.0.0",
+  "license": "MIT",
+  "exports": {
+    ".": "./main.ts",
+    "./init": "./init.ts"
+  },
+  "publish": {
+    "include": [
+      "main.ts",
+      "args.ts",
+      "manifest.ts",
+      "init.ts",
+      "ferry.sh",
+      "README.md",
+      "LICENSE",
+      "deno.json",
+      "jsr.json"
+    ]
+  }
+}
