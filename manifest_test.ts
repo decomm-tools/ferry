@@ -243,12 +243,47 @@ Deno.test(".DS_Store and Thumbs.db skipped unless --all", async () => {
     await write(dir, "nested/Thumbs.db", "win\n");
     await run(["out", dir]);
     assertEquals((await receipt(dir)).map((row) => row.path), ["keep.txt"]);
+    assertEquals(await run(["in", dir]), "ok (1)\n");
     await run(["out", "--force", "--all", dir]);
     assertEquals((await receipt(dir)).map((row) => row.path), [
       ".DS_Store",
       "keep.txt",
       "nested/Thumbs.db",
     ]);
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("directory named .DS_Store is still walked", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "decomm-ferry-noise-dir-" });
+  try {
+    await write(dir, "keep.txt", "keep\n");
+    await write(dir, ".DS_Store/payload.bin", "hid\n");
+    await run(["out", dir]);
+    assertEquals((await receipt(dir)).map((row) => row.path), [
+      ".DS_Store/payload.bin",
+      "keep.txt",
+    ]);
+    assertEquals(await run(["in", dir]), "ok (2)\n");
+  } finally {
+    await Deno.remove(dir, { recursive: true });
+  }
+});
+
+Deno.test("in verifies v0 junk paths without --all", async () => {
+  const dir = await Deno.makeTempDir({ prefix: "decomm-ferry-v0-junk-" });
+  try {
+    await write(dir, "keep.txt", "keep\n");
+    await write(dir, ".DS_Store", "mac\n");
+    const keepSha = await sha256File(`${dir}/keep.txt`);
+    const junkSha = await sha256File(`${dir}/.DS_Store`);
+    await Deno.writeTextFile(
+      `${dir}/ferry.jsonl`,
+      JSON.stringify({ path: ".DS_Store", sha256: junkSha }) + "\n" +
+        JSON.stringify({ path: "keep.txt", sha256: keepSha }) + "\n",
+    );
+    assertEquals(await run(["in", dir]), "ok (2)\n");
   } finally {
     await Deno.remove(dir, { recursive: true });
   }

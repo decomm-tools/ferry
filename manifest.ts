@@ -83,9 +83,10 @@ const visitFile = async (
  */
 export const walkFiles = async (
   root: string,
-  options: { all?: boolean } = {},
+  options: { all?: boolean; keep?: Iterable<string> } = {},
 ): Promise<ManifestEntry[]> => {
   const files: ManifestEntry[] = [];
+  const keep = new Set(options.keep ?? []);
 
   const walk = async (abs: string, rel: string): Promise<void> => {
     try {
@@ -99,13 +100,15 @@ export const walkFiles = async (
           throw unreadable(childRel);
         }
         if (st.isSymlink) continue;
-        if (!options.all && SKIP_NOISE.has(entry.name)) continue;
         if (st.isDirectory) {
           if (entry.name === ".git") continue;
           await walk(childAbs, childRel);
           continue;
         }
         if (!st.isFile) continue;
+        if (
+          !options.all && SKIP_NOISE.has(entry.name) && !keep.has(childRel)
+        ) continue;
         if (childRel === MANIFEST_NAME) continue;
         files.push(await visitFile(childAbs, childRel, st));
       }
@@ -214,7 +217,12 @@ export const ferryIn = async (
   for (const entry of expected) expectedMap.set(entry.path, entry);
 
   const actualMap = new Map<string, ManifestEntry>();
-  for (const entry of await walkFiles(dir, { all: options.all })) {
+  for (
+    const entry of await walkFiles(dir, {
+      all: options.all,
+      keep: expectedMap.keys(),
+    })
+  ) {
     actualMap.set(entry.path, entry);
   }
 
