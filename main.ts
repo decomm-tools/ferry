@@ -33,8 +33,13 @@ Commands:
   in <dir>             Rehash and fail on missing, extra, or changed
   help                 This text
 
+Flags:
+  --force              Overwrite ferry.jsonl if it already exists
+  --all                Include .DS_Store and Thumbs.db
+
 Examples:
   ./ferry.sh out ./dir
+  ./ferry.sh out --force ./dir
   ./ferry.sh in ./dir
   deno task compile
 `;
@@ -54,23 +59,23 @@ Examples:
  * await run(["out", "./dir"]);
  * ```
  */
-export async function run(argv: string[]): Promise<string> {
+export const run = async (argv: string[]): Promise<string> => {
   const args = parseArgs(argv);
   if (args.help || args.command === "" || args.command === "help") return HELP;
 
   switch (args.command) {
     case "out": {
       if (!args.dir) throw new Error("out needs a directory");
-      return await ferryOut(args.dir);
+      return await ferryOut(args.dir, { force: args.force, all: args.all });
     }
     case "in": {
       if (!args.dir) throw new Error("in needs a directory");
-      return await ferryIn(args.dir);
+      return await ferryIn(args.dir, { all: args.all });
     }
     default:
       throw new Error(`Unknown command: ${args.command}`);
   }
-}
+};
 
 if (import.meta.main) {
   try {

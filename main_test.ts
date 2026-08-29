@@ -6,6 +6,8 @@ Deno.test("parseArgs out ./dir", () => {
   const args = parseArgs(["out", "./dir"]);
   assertEquals(args.command, "out");
   assertEquals(args.dir, "./dir");
+  assertEquals(args.force, false);
+  assertEquals(args.all, false);
 });
 
 Deno.test("parseArgs in ./dir", () => {
@@ -19,6 +21,14 @@ Deno.test("parseArgs --help and -h", () => {
   assertEquals(parseArgs(["-h"]).help, true);
 });
 
+Deno.test("parseArgs --force and --all", () => {
+  const args = parseArgs(["out", "--force", "--all", "./dir"]);
+  assertEquals(args.command, "out");
+  assertEquals(args.dir, "./dir");
+  assertEquals(args.force, true);
+  assertEquals(args.all, true);
+});
+
 Deno.test("parseArgs unknown flag throws", () => {
   assertThrows(() => parseArgs(["--bogus"]), Error, "Unknown argument");
 });
@@ -28,6 +38,8 @@ Deno.test("run --help is decomm ferry", async () => {
   assertStringIncludes(text, "decomm ferry");
   assertStringIncludes(text, "ferry.jsonl");
   assertStringIncludes(text, "./ferry.sh out ./dir");
+  assertStringIncludes(text, "--force");
+  assertStringIncludes(text, "--all");
   assertEquals(text.includes("decomm pack"), false);
   assertEquals(text.includes("pack <"), false);
 });
