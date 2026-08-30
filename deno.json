@@ -22,7 +22,7 @@
   "tasks": {
     "ferry": "deno run --allow-read --allow-write main.ts",
     "compile": "mkdir -p bin && deno compile --allow-read --allow-write --output bin/ferry main.ts",
-    "test": "deno test --allow-read --allow-write",
+    "test": "deno test --allow-read --allow-write --allow-run",
     "check": "deno check main.ts args.ts manifest.ts init.ts",
     "fmt": "deno fmt",
     "lint": "deno lint"

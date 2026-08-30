@@ -29,23 +29,42 @@ rewrite).
 
 ## Carry-in
 
+Init on a connected machine. Hash a folder. Copy that folder. Check it dark.
+
+### Init
+
 ```sh
 deno run -A jsr:@decomm/ferry/init ./ferry
 cd ferry
 deno task compile
-./ferry.sh out ./dir
-./ferry.sh in ./dir
 ```
 
-Or from this repo, on a connected machine:
+Or from this repo: `deno task compile`. That leaves `bin/ferry`.
+
+### Out (still connected)
 
 ```sh
-deno task compile
-./ferry.sh out ./dir
-./ferry.sh in ./dir
+mkdir -p ./kit
+echo "sandbox notes" > ./kit/readme.txt
+./ferry.sh out ./kit
 ```
 
-Copy the **folder you hashed**, including `ferry.jsonl`, onto the isolated box. Then `in`.
+That writes `kit/ferry.jsonl`.
 
-`ferry.sh` runs the compiled ferry CLI if it exists, otherwise
-`deno run --allow-read --allow-write`. The isolated box does not need Deno if you compiled first.
+### Copy
+
+Carry `kit/` (including `ferry.jsonl`) onto the isolated box. Carry `ferry/` too, with `bin/ferry`,
+if the far side does not already have the tool.
+
+### Run dark
+
+No network. The box never needs to come back online.
+
+```sh
+./ferry.sh in ./kit
+```
+
+Prints `ok (1)` if every byte survived.
+
+`ferry.sh` uses the compiled binary if present, otherwise `deno run --allow-read --allow-write`. The
+isolated box does not need Deno if you compiled first.

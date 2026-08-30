@@ -60,3 +60,34 @@ Deno.test("run out without dir throws", async () => {
 Deno.test("run in without dir throws", async () => {
   await assertRejects(() => run(["in"]), Error, "in needs a directory");
 });
+
+const ferrySh = async (args: string[]): Promise<string> => {
+  const proc = new Deno.Command("sh", {
+    args: [`${Deno.cwd()}/ferry.sh`, ...args],
+    cwd: Deno.cwd(),
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const out = await proc.output();
+  const stdout = new TextDecoder().decode(out.stdout);
+  const stderr = new TextDecoder().decode(out.stderr);
+  if (!out.success) throw new Error(stderr || stdout);
+  return stdout;
+};
+
+Deno.test("ferry.sh out, copy, in is the carry-in example", async () => {
+  const kit = await Deno.makeTempDir({ prefix: "decomm-ferry-kit-" });
+  const far = await Deno.makeTempDir({ prefix: "decomm-ferry-far-" });
+  try {
+    await Deno.writeTextFile(`${kit}/readme.txt`, "sandbox notes\n");
+    const hashed = await ferrySh(["out", kit]);
+    assertStringIncludes(hashed, "1 file");
+    assertStringIncludes(hashed, `${kit}/ferry.jsonl`);
+    await Deno.copyFile(`${kit}/readme.txt`, `${far}/readme.txt`);
+    await Deno.copyFile(`${kit}/ferry.jsonl`, `${far}/ferry.jsonl`);
+    assertEquals((await ferrySh(["in", far])).trim(), "ok (1)");
+  } finally {
+    await Deno.remove(kit, { recursive: true });
+    await Deno.remove(far, { recursive: true });
+  }
+});
